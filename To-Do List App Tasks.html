@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<!-- saved from url=(0085)file:///C:/Users/Wahab/OneDrive/Desktop/html/Rhombix%20technologies%20task/index.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <title>To-Do List App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url("file:///C:/Users/Wahab/OneDrive/Desktop/HTML/Rhombix%20technologies%20task/image1.jpg");
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            justify-content: center;
+            padding-top: 50px;
+        }
+
+        .todo-container {
+            background-color: rgb(125, 209, 117);
+            padding: 20px;
+            width: 360px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        input {
+            width: 70%;
+            padding: 8px;
+        }
+
+        button {
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+
+        li {
+            background: #eee;
+            padding: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: grab;
+        }
+
+        li.completed span {
+            text-decoration: line-through;
+            color: gray;
+        }
+
+        .left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .actions button {
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="todo-container">
+    <h2>To-Do List</h2>
+
+    <input type="text" id="taskInput" placeholder="Enter a task">
+    <button onclick="addTask()">Add</button>
+
+    <ul id="taskList"><li draggable="true" class="">
+                <div class="left">
+                    <input type="checkbox" onchange="toggleComplete(0)">
+                    <span>Complete task 1</span>
+                </div>
+                <div class="actions">
+                    <button onclick="editTask(0)">Edit</button>
+                    <button onclick="deleteTask(0)">Delete</button>
+                </div>
+            </li><li draggable="true" class="">
+                <div class="left">
+                    <input type="checkbox" onchange="toggleComplete(1)">
+                    <span>Complete task 2</span>
+                </div>
+                <div class="actions">
+                    <button onclick="editTask(1)">Edit</button>
+                    <button onclick="deleteTask(1)">Delete</button>
+                </div>
+            </li><li draggable="true" class="">
+                <div class="left">
+                    <input type="checkbox" onchange="toggleComplete(2)">
+                    <span>Complete taak 3</span>
+                </div>
+                <div class="actions">
+                    <button onclick="editTask(2)">Edit</button>
+                    <button onclick="deleteTask(2)">Delete</button>
+                </div>
+            </li><li draggable="true" class="completed">
+                <div class="left">
+                    <input type="checkbox" checked="" onchange="toggleComplete(3)">
+                    <span>Complete task 4</span>
+                </div>
+                <div class="actions">
+                    <button onclick="editTask(3)">Edit</button>
+                    <button onclick="deleteTask(3)">Delete</button>
+                </div>
+            </li><li draggable="true" class="completed">
+                <div class="left">
+                    <input type="checkbox" checked="" onchange="toggleComplete(4)">
+                    <span>Complete task 5</span>
+                </div>
+                <div class="actions">
+                    <button onclick="editTask(4)">Edit</button>
+                    <button onclick="deleteTask(4)">Delete</button>
+                </div>
+            </li><li draggable="true" class="completed">
+                <div class="left">
+                    <input type="checkbox" checked="" onchange="toggleComplete(5)">
+                    <span>Complete task 6</span>
+                </div>
+                <div class="actions">
+                    <button onclick="editTask(5)">Edit</button>
+                    <button onclick="deleteTask(5)">Delete</button>
+                </div>
+            </li></ul>
+</div>
+
+<script>
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    let dragIndex = null;
+
+    function saveTasks() {
+        localStorage.setItem("tasks", JSON.stringify(tasks));
+    }
+
+    function renderTasks() {
+        const list = document.getElementById("taskList");
+        list.innerHTML = "";
+
+        tasks.forEach((task, index) => {
+            const li = document.createElement("li");
+            li.draggable = true;
+            li.className = task.completed ? "completed" : "";
+
+            li.addEventListener("dragstart", () => dragIndex = index);
+            li.addEventListener("dragover", e => e.preventDefault());
+            li.addEventListener("drop", () => dropTask(index));
+
+            li.innerHTML = `
+                <div class="left">
+                    <input type="checkbox" ${task.completed ? "checked" : ""}
+                        onchange="toggleComplete(${index})">
+                    <span>${task.text}</span>
+                </div>
+                <div class="actions">
+                    <button onclick="editTask(${index})">Edit</button>
+                    <button onclick="deleteTask(${index})">Delete</button>
+                </div>
+            `;
+
+            list.appendChild(li);
+        });
+    }
+
+    function addTask() {
+        const input = document.getElementById("taskInput");
+        const text = input.value.trim();
+        if (!text) return;
+
+        tasks.push({ text, completed: false });
+        input.value = "";
+        saveTasks();
+        renderTasks();
+    }
+
+    function editTask(index) {
+        const newText = prompt("Edit task:", tasks[index].text);
+        if (newText !== null && newText.trim()) {
+            tasks[index].text = newText.trim();
+            saveTasks();
+            renderTasks();
+        }
+    }
+
+    function deleteTask(index) {
+        tasks.splice(index, 1);
+        saveTasks();
+        renderTasks();
+    }
+
+    function toggleComplete(index) {
+        tasks[index].completed = !tasks[index].completed;
+        saveTasks();
+        renderTasks();
+    }
+
+    function dropTask(dropIndex) {
+        const draggedTask = tasks.splice(dragIndex, 1)[0];
+        tasks.splice(dropIndex, 0, draggedTask);
+        saveTasks();
+        renderTasks();
+    }
+
+    renderTasks();
+</script>
+
+
+
+</body></html>
