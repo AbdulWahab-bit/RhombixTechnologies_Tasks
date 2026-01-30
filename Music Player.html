@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Music Player</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
+        url('https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4')
+        no-repeat center/cover;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .player {
+      width: 360px;
+      background: rgba(30,30,30,0.7);
+      backdrop-filter: blur(15px);
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin: 6px 0;
+      border-radius: 6px;
+      border: none;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    li {
+      padding: 8px;
+      cursor: pointer;
+      border-bottom: 1px solid #333;
+    }
+
+    li.active {
+      background: linear-gradient(90deg, #1db954, #1ed760);
+      color: black;
+      font-weight: bold;
+      border-radius: 6px;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 12px;
+    }
+
+    button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .time {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="player">
+  <h2>🎵 Music Player</h2>
+
+  <input type="text" id="search" placeholder="Search song">
+
+  <select id="category">
+    <option value="all">All Categories</option>
+    <option value="pop">Pop</option>
+    <option value="rock">Rock</option>
+    <option value="lofi">Lo-Fi</option>
+  </select>
+
+  <ul id="playlist"></ul>
+
+  <div class="controls">
+    <button onclick="prevSong()">⏮</button>
+    <button onclick="togglePlay()">▶️ / ⏸</button>
+    <button onclick="nextSong()">⏭</button>
+    <button onclick="toggleMute()">🔊 / 🔇</button>
+  </div>
+
+  <input type="range" min="0" max="1" step="0.01" value="0.7"
+         onchange="setVolume(this.value)">
+
+  <div class="time">
+    <span id="currentTime">0:00</span>
+    <span id="duration">0:00</span>
+  </div>
+
+  <input type="range" id="progress" min="0" max="100" value="0">
+
+  <audio id="audio"></audio>
+</div>
+
+<script>
+  // Playlist
+  const songs = [
+    { title: "Dreams", category: "pop", src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+    { title: "Rock On", category: "rock", src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+    { title: "Chill Vibes", category: "lofi", src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
+    { title: "Ishq Nacahaway", category: "pop", src: "file:///C:/Users/92342/Desktop/Rhombix%20technologies%20task/Task%202%20Music%20player/songs/Ishq%20Nachaawe%20-%20Kho%20Gaye%20Hum%20Kahan%20_%20Siddhant,%20Ananya,%20Adarsh%20_%20Rashmeet%20K,%20Karan%20K,%20Yashraj,%20Dhrruv.mp3" },
+    { title: "Pal Pal", category: "lofi", src: "file:///C:/Users/92342/Desktop/Rhombix%20technologies%20task/Task%202%20Music%20player/songs/Afusic%20-%20Pal%20Pal%20(Official%20Music%20Video)%20Prod.%20@AliSoomroMusic.mp3" },
+    { title: "MF GABHRU (KARAN AUJLA)", category: "rock", src: "file:///C:/Users/92342/Desktop/Rhombix%20technologies%20task/Task%202%20Music%20player/songs/MF%20GABHRU!%20(Official%20Video)%20KARAN%20AUJLA%20_%20IKKY%20_%20Latest%20Punjabi%20Songs%202025.mp3" },
+    { title: "The last ride", category: "rock", src: "file:///C:/Users/92342/Desktop/Rhombix%20technologies%20task/Task%202%20Music%20player/songs/THE%20LAST%20RIDE%20-%20Offical%20Video%20_%20%20Sidhu%20Moose%20Wala%20_%20Wazir%20Patar.mp3" },
+    { title: "Hasde hi rehnde aa", category: "lofi", src: "file:///C:/Users/92342/Desktop/Rhombix%20technologies%20task/Task%202%20Music%20player/songs/Hasde%20Hi%20Rehne%20Aan%20(Official%20Video)%20Hustinder%20_%20Black%20Virus%20_%20Vintage%20Records%20_%20Punjabi%20Songs.mp3" }
+  ];
+
+  const audio = document.getElementById("audio");
+  const playlist = document.getElementById("playlist");
+  const progress = document.getElementById("progress");
+  const currentTimeEl = document.getElementById("currentTime");
+  const durationEl = document.getElementById("duration");
+
+  let currentIndex = 0;
+
+  function renderPlaylist(filter = "all", search = "") {
+    playlist.innerHTML = "";
+    const filteredSongs = songs
+      .filter(song => filter === "all" || song.category === filter)
+      .filter(song => song.title.toLowerCase().includes(search.toLowerCase()));
+
+    filteredSongs.forEach(song => {
+      const li = document.createElement("li");
+      li.textContent = song.title;
+      li.classList.toggle("active", song === songs[currentIndex]);
+      li.onclick = () => playSong(songs.indexOf(song));
+      playlist.appendChild(li);
+    });
+  }
+
+  function playSong(index) {
+    currentIndex = index;
+    audio.src = songs[currentIndex].src;
+    audio.play().catch(() => {});
+    renderPlaylist(
+      document.getElementById("category").value,
+      document.getElementById("search").value
+    );
+  }
+
+  function togglePlay() {
+    if (audio.paused) {
+      audio.play().catch(() => {});
+    } else {
+      audio.pause();
+    }
+  }
+
+  function nextSong() {
+    currentIndex = (currentIndex + 1) % songs.length;
+    playSong(currentIndex);
+  }
+
+  function prevSong() {
+    currentIndex = (currentIndex - 1 + songs.length) % songs.length;
+    playSong(currentIndex);
+  }
+
+  function setVolume(value) {
+    audio.volume = value;
+    audio.muted = false;
+  }
+
+  function toggleMute() {
+    audio.muted = !audio.muted;
+  }
+
+  audio.addEventListener("timeupdate", () => {
+    if (!audio.duration) return;
+    progress.value = (audio.currentTime / audio.duration) * 100;
+    currentTimeEl.textContent = formatTime(audio.currentTime);
+    durationEl.textContent = formatTime(audio.duration);
+  });
+
+  audio.addEventListener("ended", nextSong);
+
+  progress.addEventListener("input", () => {
+    if (!audio.duration) return;
+    audio.currentTime = (progress.value / 100) * audio.duration;
+  });
+
+  function formatTime(time) {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60).toString().padStart(2, "0");
+    return `${minutes}:${seconds}`;
+  }
+
+  document.getElementById("search").addEventListener("input", e => {
+    renderPlaylist(
+      document.getElementById("category").value,
+      e.target.value
+    );
+  });
+
+  document.getElementById("category").addEventListener("change", e => {
+    renderPlaylist(
+      e.target.value,
+      document.getElementById("search").value
+    );
+  });
+
+  // Initialize playlist
+  renderPlaylist();
+</script>
+
+</body>
+</html>
