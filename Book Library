@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Personal Book Library</title>
+
+<style>
+body{
+  font-family: Arial, sans-serif;
+  margin:0;
+  padding:20px;
+  background:url('https://images.unsplash.com/photo-1512820790803-83ca734da794') no-repeat center center/cover;
+  color:#fff;
+}
+.container{
+  max-width:900px;
+  margin:auto;
+  background:rgba(0,0,0,0.75);
+  padding:20px;
+  border-radius:15px;
+}
+h1{text-align:center}
+input,select,button{
+  padding:8px;
+  margin:5px 0;
+  border-radius:5px;
+  border:none;
+}
+button{
+  cursor:pointer;
+  background:#ff9800;
+  color:#fff;
+}
+button:hover{background:#e68900}
+.book{background:rgba(255,255,255,0.1);padding:10px;margin:10px 0;border-radius:10px}
+.borrowed{color:#ff5252;font-weight:bold}
+.history{margin-top:20px}
+</style>
+</head>
+
+<body>
+<div class="container">
+<h1>📚 Personal Book Library</h1>
+
+<h3>Add Book</h3>
+<input id="title" placeholder="Title">
+<input id="author" placeholder="Author">
+<select id="category">
+<option>Fiction</option>
+<option>Science</option>
+<option>History</option>
+<option>Technology</option>
+</select>
+<button onclick="addBook()">Add</button>
+
+<h3>Search</h3>
+<input id="search" placeholder="Search by title" onkeyup="searchBooks()">
+
+<h3>Books</h3>
+<div id="list"></div>
+
+<!-- Read Modal -->
+<div id="reader" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); padding:40px; box-sizing:border-box;">
+  <div style="background:#fff; color:#000; max-width:700px; margin:auto; padding:20px; border-radius:10px; max-height:80%; overflow:auto;">
+    <h2 id="readerTitle"></h2>
+    <p id="readerContent"></p>
+    <button onclick="closeReader()">Close</button>
+  </div>
+</div>
+
+<div class="history">
+<h3>Borrowing History</h3>
+<ul id="history"></ul>
+</div>
+</div>
+
+<script>
+let books = JSON.parse(localStorage.getItem("books")) || [
+  {
+    t: "The Great Gatsby",
+    a: "F. Scott Fitzgerald",
+    c: "Fiction",
+    b: false,
+    content: "In my younger and more vulnerable years my father gave me some advice that I've been turning over in my mind ever since..."
+  },
+  {
+    t: "1984",
+    a: "George Orwell",
+    c: "Fiction",
+    b: false,
+    content: "It was a bright cold day in April, and the clocks were striking thirteen..."
+  },
+  {
+    t: "A Brief History of Time",
+    a: "Stephen Hawking",
+    c: "Science",
+    b: false,
+    content: "We go about our daily lives understanding almost nothing of the world..."
+  },
+  {
+    t: "Sapiens",
+    a: "Yuval Noah Harari",
+    c: "History",
+    b: false,
+    content: "About 13.5 billion years ago, matter, energy, time and space came into being..."
+  }
+];
+let historyLog=JSON.parse(localStorage.getItem('history'))||[];
+
+const save=()=>{
+  localStorage.setItem('books',JSON.stringify(books));
+  localStorage.setItem('history',JSON.stringify(historyLog));
+}
+
+function addBook(){
+  const t=title.value.trim(),a=author.value.trim(),c=category.value;
+  if(!t||!a)return alert("Fill all fields");
+  books.push({t,a,c,b:false});
+  title.value=author.value="";
+  save();render();
+}
+
+function render(data=books){
+  list.innerHTML="";
+  data.forEach((bk,i)=>{
+    list.innerHTML+=`<div class='book'>
+      <strong>${bk.t}</strong> by ${bk.a}<br>
+      Category: ${bk.c}<br>
+      Status: ${bk.b?'<span class="borrowed">Borrowed</span>':'Available'}<br>
+      <button onclick='toggle(${i})'>${bk.b?'Return':'Borrow'}</button>
+      <button onclick='readBook(${i})'>Read</button>
+      <button onclick='del(${i})'>Delete</button>
+    </div>`;
+  });
+  history.innerHTML=historyLog.map(h=>`<li>${h}</li>`).join('');
+}
+
+function toggle(i){
+  books[i].b=!books[i].b;
+  historyLog.push(`${books[i].b?'Borrowed':'Returned'}: ${books[i].t} (${new Date().toLocaleString()})`);
+  save();render();
+}
+
+function del(i){books.splice(i,1);save();render();}
+
+function searchBooks(){
+  const q=search.value.toLowerCase();
+  render(books.filter(b=>b.t.toLowerCase().includes(q)));
+}
+
+function readBook(i){
+  document.getElementById('readerTitle').innerText = books[i].t;
+  document.getElementById('readerContent').innerText = books[i].content;
+  document.getElementById('reader').style.display = 'block';
+}
+
+function closeReader(){
+  document.getElementById('reader').style.display = 'none';
+}
+
+render();
+</script>
+</body>
+</html>
